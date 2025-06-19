@@ -2,7 +2,7 @@ from azure.storage.blob import BlobServiceClient
 import os
 from dotenv import load_dotenv ## 환경변수(.env) 정보 가져옴
 
-load_dotenv() ## 환경변수 읽어옴
+load_dotenv(dotenv_path=".env", override=True) ## 환경변수 읽어옴
 
 # def upload_blob():
 
@@ -10,9 +10,9 @@ load_dotenv() ## 환경변수 읽어옴
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 # 컨테이너 및 Blob 이름 설정
-container_name = "origin-manual"
-blob_name = "manual-data.csv"
-file_path = "manual-data.csv"
+container_name = "manual-json"
+blob_name = "manual-data.json"
+file_path = "manual-data.json"
 
 try: 
 
@@ -32,9 +32,4 @@ except Exception as ex:
     print('Exception:')
     print(ex)
 
-
-
-# if __name__ == "__main__":
-#     data = {"menu": "인벤토리>설정", "desc": "인벤토리 설정 메뉴입니다.", "auth" : "모든사용자"}
-#     upload_blob()
 
