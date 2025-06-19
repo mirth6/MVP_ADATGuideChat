@@ -46,7 +46,7 @@ print(os.getcwd())
 doc = fitz.open("통합광고플랫폼-사용자매뉴얼(영업사).pdf")
 data_list = []
 
-for page_num in range(3,5) : ##range(len(doc)):
+for page_num in range(3,10) : ##range(len(doc)):
     single_page = fitz.open()   
     single_page.insert_pdf(doc, from_page=page_num, to_page=page_num)
 
@@ -87,6 +87,6 @@ print(data_list)
 
 
 # JSON 파일로 저장
-with open('manual-data2.json', 'w', encoding='utf-8') as f:
+with open('manual-data.json', 'w', encoding='utf-8') as f:
     json.dump(data_list, f, ensure_ascii=False, indent=2)
 
