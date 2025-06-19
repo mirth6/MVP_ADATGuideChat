@@ -25,8 +25,8 @@ chat_client = AzureOpenAI(
     api_key=openai_api_key
 )
 
-st.title("ADAT Assistant")
-st.write("Ask your questions below: ")
+st.title("GATE Assistant")
+st.write("질문을 입력하세요")
 
 ## 상태를 유지하기 위해 st.session_state에 저장
 if "messages" not in st.session_state:
