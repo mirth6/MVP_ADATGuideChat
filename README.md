@@ -6,3 +6,25 @@ bash /home/site/wwwroot/streamlit.sh
 
 Azure 포털에서 Azure Search 서비스로 이동
 설정 > "시맨틱 검색"으로 이동
+
+
+
+# Resource Group의 생성
+echo "Resource Group creating..."
+az group create --name khh-rg --location eastus
+
+# OpenAI Service 생성
+echo "OpenAI Service creating..."
+az cognitiveservices account create --name khh-openai-0619 --resource-group khh-rg --kind OpenAI --sku S0 --location eastus
+
+# Azure AI Search의 생성
+echo "Azure AI Search creating..."
+az search service create --name khh-search-0619 --resource-group khh-rg --sku Basic --partition-count 1 --replica-count 1
+
+# Azure Storage Accout의 생성
+echo "Azure Storage Account creating..."
+az storage account create --name khhstorage0619 --resource-group khh-rg --location eastus --sku Standard_LRS
+
+# 컨테이너 생성
+echo "Blob storage container creating in Azure Storage Account"
+az storage container create --name pdf-data --account-name khhstorage0619

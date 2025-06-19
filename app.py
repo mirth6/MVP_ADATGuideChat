@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv ## 환경변수(.env) 정보 가져옴
 from openai import AzureOpenAI
 import streamlit as st
-
+from classify_question import classify_question
 
 
 load_dotenv() ## 환경변수 읽어옴
@@ -35,30 +35,33 @@ if "messages" not in st.session_state:
         {
             "role" : "system",
             "content" : """통합광고플랫폼 관련 사용자가 정보를 찾는 데 도움이 되는 AI 도우미입니다. 
-                            다음과 같은 질문에 답할 수 있습니다.                
-            
-                            1. 용어를 모르는 경우
-                            단어를 입력하면 그에 대한 설명을 알려주세요.
-                            
-                            2. 통합광고플랫폼 사이트 이용에 대한 경우
-                            메뉴 위치를 알려주세요.
-                            메뉴는 인벤토리>사용 입니다.
+            정확하지 않은 답변은 "모르겠습니다"라고 답변합니다.
 
-                            정확하지 않은 답변은 "모르겠습니다"라고 답변합니다.
-                            """
+            "rag-glossary"인 경우,
+            용어에 대한 설명을 제공해주세요.
+
+            "rag-manual"인 경우, menu 경로를 문서에서 찾은 그대로 답변해주세요.
+             응답 형식 
+              예시) 캠페인 등록은 다음 경로에서 확인할 수 있습니다.
+                    메뉴 경로 : {menu}
+                    해당 페이지에 대한 설명
+                    자세한 내용은 메뉴얼 {page}페이지를 참고하세요.
+
+
+                """
         },
     ]
 
 ## Display chat history
 for message in st.session_state.messages : 
-    if message["role"] != "system":
+    if message["role"] != "system":  ## 시스템 메시지는 표시하지 않음
         st.chat_message(message["role"]).write(message["content"])
 
 
 
 
 ## openai 호출 함수
-def get_openai_response(messages):
+def get_openai_response(messages, index_name):
     ## Additional parameters to apply RAG pattern using the AI Search index
     ## 아래 형태가 거의 표준
     rag_params = {
@@ -98,11 +101,15 @@ def get_openai_response(messages):
 
 ## user input
 if user_input := st.chat_input("Enter your question: "):   ## :=(월러스 연산자) user_input에 값을 할당과 동시에 값 반환
+    ## user 입력값 저장
     st.session_state.messages.append({"role":"user", "content": user_input})
     st.chat_message("user").write(user_input)
 
+    ## 질문 의도 파악해서 분기처리
+    index_name = classify_question(user_input)
+
     with st.spinner("응답을 기다리는 중..."):
-         response = get_openai_response(st.session_state.messages)
+         response = get_openai_response(st.session_state.messages, index_name)
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)

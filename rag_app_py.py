@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv ## 환경변수(.env) 정보 가져옴
 from openai import AzureOpenAI
 from search import search_index
-
+from classify_question import classify_question
 
 def main():
     os.system('cls' if os.name == 'nt' else 'clear')  ##윈도우면 cls, 다른거면 clear
@@ -32,7 +32,21 @@ def main():
     prompt = [
         {
             "role" : "system",
-            "content" : "도우미에요. rag-manual을 참조하는 경우, 가져온 원본 데이터를 보여줘. rag-term을 참조하는 경우 단어의 의미를 알려줘"
+            "content" : """통합광고플랫폼 관련 사용자가 정보를 찾는 데 도움이 되는 AI 도우미입니다. 
+            정확하지 않은 답변은 "모르겠습니다"라고 답변합니다.
+
+            "rag-glossary"인 경우,
+            용어에 대한 설명을 제공해주세요.
+
+            "rag-manual"인 경우, menu 경로를 문서에서 찾은 그대로 답변해주세요.
+             응답 형식 
+              예시) 캠페인 등록은 다음 경로에서 확인할 수 있습니다.
+                    메뉴 경로 : {menu}
+                    해당 페이지에 대한 설명
+                    자세한 내용은 메뉴얼 {page}페이지를 참고하세요.
+
+
+                """
         },
     ]
 
@@ -45,38 +59,39 @@ def main():
             print("Please enter a valid question...")
             continue
 
-
-        rag_manual = search_index("rag-manual",input_text)
-        rag_term = search_index("rag-term",input_text)
+        ## 질문 의도 파악해서 분기처리
+        index_name = classify_question(input_text)
+        # rag_manual = search_index("rag-manual",input_text)
+        # rag_term = search_index("rag-term",input_text)
         ## user 입력데이터를 prompt에 추가
 
 
 
-        prompt.append({"role":"user", "content": input_text}).append(rag_manual).append(rag_term)
+        prompt.append({"role":"user", "content": input_text})
         # print(prompt)
 
-        # ## Additional parameters to apply RAG pattern using the AI Search index
-        # ## 아래 형태가 거의 표준
-        # rag_params = {
-        #     "data_sources" : [
-        #         {
-        #             "type":"azure_search",
-        #             "parameters" : {
-        #                 "endpoint" : search_endpoint,
-        #                 "index_name" : index_name,
-        #                 "authentication" : {  ## 인증방법 apikey
-        #                     "type" : "api_key",
-        #                     "key" : search_api_key
-        #                 },
-        #                 "query_type" : "vector_simple_hybrid", ## text / vector / hybrid
-        #                 "embedding_dependency" : { ##질문할때도 db와 동일한 모델로 임베딩되도록
-        #                     "type" : "deployment_name",
-        #                     "deployment_name" : embedding_model
-        #                 }
-        #             },
-        #         }
-        #     ]
-        # }
+        ## Additional parameters to apply RAG pattern using the AI Search index
+        ## 아래 형태가 거의 표준
+        rag_params = {
+            "data_sources" : [
+                {
+                    "type":"azure_search",
+                    "parameters" : {
+                        "endpoint" : search_endpoint,
+                        "index_name" : index_name,
+                        "authentication" : {  ## 인증방법 apikey
+                            "type" : "api_key",
+                            "key" : search_api_key
+                        },
+                        "query_type" : "vector_simple_hybrid", ## text / vector / hybrid
+                        "embedding_dependency" : { ##질문할때도 db와 동일한 모델로 임베딩되도록
+                            "type" : "deployment_name",
+                            "deployment_name" : embedding_model
+                        }
+                    },
+                }
+            ]
+        }
 
 
      
@@ -85,7 +100,7 @@ def main():
         response = chat_client.chat.completions.create(
             model= chat_model,
             messages=prompt,
-            # extra_body = rag_params  ##RAG 파라미터
+            extra_body = rag_params  ##RAG 파라미터
         )
         
 
