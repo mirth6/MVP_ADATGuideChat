@@ -1,4 +1,8 @@
 
+'''
+메뉴얼(pdf) 데이터를 추출해서 json 형태로 변경
+DocumentIntelligence에서 메뉴얼 형태에 맞는 custom 모델 생성
+'''
 ## pip install azure-ai-documentintelligence
 
 import os
@@ -15,37 +19,26 @@ load_dotenv(dotenv_path=".env", override=True) ## 환경변수 읽어옴
 endpoint = os.getenv("DOC_INTELLIGENCE_ENDPOINT")
 key = os.getenv("DOC_INTELLIGENCE_KEY")
 model_id = os.getenv("CUSTOM_BUILT_MODEL_ID")
-
-print(endpoint)
-print(key)
-print(model_id)
-
-model_id="custom-extrc-model" 
+# model_id="custom-extrc-model" 
+doc_path = "통합광고플랫폼-사용자매뉴얼.pdf"
 
 ##"YOUR_DOCUMENT"
 # formUrl = "https://github.com/mirth6/ktdsTraining/blob/main/인벤토리.pdf"
 #"https://khhstorage001.blob.core.windows.net/data/인벤토리.pdf"
 
-
-# Azure 포털에 로그인합니다.
-# 스토리지 계정으로 이동합니다.
-# 설정 섹션에서 구성을 선택합니다.
-# 공용 Blob 액세스 설정을 확인하고, 필요에 따라 변경합니다
-
+## document_intelligence 클라이언트 생성
 document_intelligence_client  = DocumentIntelligenceClient(
     endpoint=endpoint, credential=AzureKeyCredential(key)
 )
 
-print(os.getcwd())
-
-# document_bytes = split_pdf_with_pymupdf("인벤토리.pdf",".",0)
 
 # with open("1 .pdf", "rb") as file:
 #     document_bytes = file.read()
 
-doc = fitz.open("통합광고플랫폼-사용자매뉴얼(영업사).pdf")
+doc = fitz.open(doc_path)
 data_list = []
 
+## pdf파일 한장씩 변환
 for page_num in range(3,10) : ##range(len(doc)):
     single_page = fitz.open()   
     single_page.insert_pdf(doc, from_page=page_num, to_page=page_num)
@@ -65,7 +58,7 @@ for page_num in range(3,10) : ##range(len(doc)):
     )
     result = poller.result()
 
-    print(result.documents)
+    # print(result.documents)
     # print("---")
     # # print(result.documents[0].bounding_regions[0])
     # print(result.documents[0].fields['menu']['content'])
@@ -83,7 +76,7 @@ for page_num in range(3,10) : ##range(len(doc)):
     data_list.append({"menu": menu, "desc": desc, "auth" : auth, "page" : page})
 
 
-print(data_list)
+print(f"데이터 확인... {data_list}")
 
 
 # JSON 파일로 저장

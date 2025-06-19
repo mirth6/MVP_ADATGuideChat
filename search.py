@@ -46,42 +46,54 @@ def search_index(index_name, query):
     return response.json()
 
 
-def azure_aisearch_manual(index_name: str, query: str):
+def azure_aisearch(index_name: str, query: str):
     client = SearchClient(
         endpoint=search_endpoint,
         index_name=index_name,
         credential=AzureKeyCredential(search_api_key),
     )
     results = client.search(search_text=query, top=3)
-    docs = [{'menu': doc['menu'], 'page': doc['page'],'desc':doc['chunk'], 'auth':doc['auth']} for doc in results]
-    # print(docs)
+    docs = [{'menu': doc['menu'], 'page': doc['page'],'desc':doc['chunk'], 'auth':doc['auth'], 'score' : doc['@search.score']} for doc in results ]#if doc['@search.score'] > 0.75]
+    print(f"{index_name} , {query}")
+    print(docs)
+
     return docs
 
 
 def generate_anser(question:str, context_docs):
-    prompt = f"""
-    문서 내용에 참고하여 질문에 답변해주세요
+    try : 
+        print(context_docs)
+        prompt = f"""
+        You are an AI assistant that answers questions **only based on the provided documents**.  
+        Do not use prior knowledge or make assumptions.  
+        If the answer is not clearly found in the documents, reply with:  
+        **"The answer to the question is not found in the provided documents."**
 
-    사용자질문 {question}
+        [문서]  
+        {context_docs}
 
-    [응답형식]
-    메뉴경로 : {context_docs[0]['menu']}
-    해당 페이지에 대한 설명
+        [질문]  
+        {question}
 
-    자세한 내용은 메뉴얼 {context_docs[0]['page']}페이지를 참고하세요
-    """
+        [응답형식]
+        메뉴경로 : {context_docs[0]['menu']}
+        해당 페이지에 대한 설명
 
-# chat_client.chat.completions.create
-    response = chat_client.chat.completions.create(
-        model=chat_model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-    )
+        자세한 내용은 메뉴얼 {context_docs[0]['page']}페이지를 참고하세요
+        """
 
-    category_json = response.choices[0].message.content  # 간단 처리
-    # print(category_json)
-    return category_json
+    # chat_client.chat.completions.create
+        response = chat_client.chat.completions.create(
+            model=chat_model,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-# search_azure_ai("rag-manual", "캠페인 등록")
+        category_json = response.choices[0].message.content  # 간단 처리
+        # print(category_json)
+        return category_json
 
-generate_anser("인벤토리 확인어떻게해?", azure_aisearch_manual("rag-manual", "인벤토리 확인어떻게해?"))
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+        return "The answer is not found in the documents."
+

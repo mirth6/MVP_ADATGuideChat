@@ -4,3 +4,4 @@ python-dotenv
 openai
 azure-search
 azure-core
+azure-search-documents

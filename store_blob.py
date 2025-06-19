@@ -1,13 +1,17 @@
+'''
+추출한 manual 데이터를 blob storage에 저장
+'''
+
 from azure.storage.blob import BlobServiceClient
 import os
 from dotenv import load_dotenv ## 환경변수(.env) 정보 가져옴
 
 load_dotenv(dotenv_path=".env", override=True) ## 환경변수 읽어옴
 
-# def upload_blob():
-
 # 환경 변수에서 연결 문자열 가져오기
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+
+# def upload_blob(container_name, blob_name, file_path):
 
 # 컨테이너 및 Blob 이름 설정
 container_name = "manual-json"

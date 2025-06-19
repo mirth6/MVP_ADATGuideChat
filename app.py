@@ -1,3 +1,5 @@
+''' 통합광고플랫폼 가이드 챗봇'''
+
 ## streamlit 에서 실행 가능한 코드로 변환
 ## streamlit run .\01.rag-app.py  -> streamlit 실행
 
@@ -6,7 +8,7 @@ from dotenv import load_dotenv ## 환경변수(.env) 정보 가져옴
 from openai import AzureOpenAI
 import streamlit as st
 from classify_question import classify_question
-
+from search import azure_aisearch, generate_anser
 
 load_dotenv() ## 환경변수 읽어옴
 
@@ -34,18 +36,19 @@ if "messages" not in st.session_state:
         # 시스템 프롬프트
         {
             "role" : "system",
-            "content" : """통합광고플랫폼 관련 사용자가 정보를 찾는 데 도움이 되는 AI 도우미입니다. 
-            정확하지 않은 답변은 "모르겠습니다"라고 답변합니다.
+            "content" : """통합광고플랫폼 관련 사용자가 정보를 찾는 데 도움을 주는 AI 도우미입니다. 
+You are an AI assistant that provides information specifically about the 통합광고플랫폼, which offers advertising subscription services. 
+You have two responsibilities:  
 
-            "rag-glossary"인 경우,
-            용어에 대한 설명을 제공해주세요.
+1. Explain or define terms and products based on the provided documentation.  
+2. Help users locate where a specific feature or function is found within the platform’s menu, including the full path.  
 
-            "rag-manual"인 경우, menu 경로를 문서에서 찾은 그대로 답변해주세요.
-             응답 형식 
-              예시) 캠페인 등록은 다음 경로에서 확인할 수 있습니다.
-                    메뉴 경로 : {menu}
-                    해당 페이지에 대한 설명
-                    자세한 내용은 메뉴얼 {page}페이지를 참고하세요.
+Rules:  
+- You must answer strictly based on the provided documents.  
+- If the answer is not clearly found in the documents, reply with:  
+  → "The answer to this question is not found in the provided documents."  
+- Do not make assumptions or generate information not present in the documents.  
+
 
 
                 """
@@ -61,39 +64,51 @@ for message in st.session_state.messages :
 
 
 ## openai 호출 함수
-def get_openai_response(messages, index_name):
-    ## Additional parameters to apply RAG pattern using the AI Search index
-    ## 아래 형태가 거의 표준
-    rag_params = {
-        "data_sources" : [
-            {
-                "type":"azure_search",
-                "parameters" : {
-                    "endpoint" : search_endpoint,
-                    "index_name" : index_name,
-                    "authentication" : {  ## 인증방법 apikey
-                        "type" : "api_key",
-                        "key" : search_api_key
-                    },
-                    "query_type" : "vector_simple_hybrid", ## text / vector / vector_simple_hybrid
-                    "embedding_dependency" : { ##질문할때도 db와 동일한 모델로 임베딩되도록
-                        "type" : "deployment_name",
-                        "deployment_name" : embedding_model
-                    }
-                },
-            }
-        ]
-    }
-   
-    ## submit the chat request with RAG parameters
-    response = chat_client.chat.completions.create(
-        model= chat_model,
-        messages=messages,
-        extra_body = rag_params  ##RAG 파라미터
-    )
+def get_openai_response(messages, index_name, user_input):
+############ ai search 결과를 그대로 응답 (할루시네이션으로 인한 잘못된 답변 방지를 위해) ########
+    if index_name == "rag-manual":
+        context_docs = azure_aisearch(index_name,user_input)
+        completion = generate_anser(user_input, context_docs)
+        print(f"rag-manual {completion}")
 
-    print ("respnse messages....\n",response.choices[0].message)
-    completion = response.choices[0].message.content
+
+############ RAG pattern using the AI Search index ########
+    else :
+    ## 아래 형태가 거의 표준
+        rag_params = {
+            "data_sources" : [
+                {
+                    "type":"azure_search",
+                    "parameters" : {
+                        "endpoint" : search_endpoint,
+                        "index_name" : index_name,
+                        "authentication" : {  ## 인증방법 apikey
+                            "type" : "api_key",
+                            "key" : search_api_key
+                        },
+                        "query_type" : "vector_simple_hybrid", ## text / vector / vector_simple_hybrid
+                        "embedding_dependency" : { ##질문할때도 db와 동일한 모델로 임베딩되도록
+                            "type" : "deployment_name",
+                            "deployment_name" : embedding_model
+                        },
+                        "top_n_documents": 3,
+                        "strictness": 3
+                    },
+                }
+            ]
+        }
+   
+        ## submit the chat request with RAG parameters
+        response = chat_client.chat.completions.create(
+            model= chat_model,
+            messages=messages,
+            temperature=0.3, # 답변 다양성 줄임
+            extra_body = rag_params  ##RAG 파라미터
+        )
+
+        print ("respnse messages....\n",response.choices[0].message)
+        completion = response.choices[0].message.content
+    
     return completion
 
 
@@ -109,7 +124,7 @@ if user_input := st.chat_input("Enter your question: "):   ## :=(월러스 연�
     index_name = classify_question(user_input)
 
     with st.spinner("응답을 기다리는 중..."):
-         response = get_openai_response(st.session_state.messages, index_name)
+         response = get_openai_response(st.session_state.messages, index_name, user_input)
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)
