@@ -28,7 +28,7 @@ chat_client = AzureOpenAI(
 )
 
 st.title("GATE Assistant")
-st.write("질문을 입력하세요")
+st.write("통합광고플랫폼 이용 관련 질문을 입력하세요")
 
 ## 상태를 유지하기 위해 st.session_state에 저장
 if "messages" not in st.session_state:
