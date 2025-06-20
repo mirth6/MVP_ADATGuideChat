@@ -86,7 +86,7 @@ def main():
 ############ RAG pattern using the AI Search index ########
         ## 아래 형태가 거의 표준     
         else :
-            index_name = "rag-glossary"
+            # index_name = "rag-glossary"
             rag_params = {
                 "data_sources" : [
                     {

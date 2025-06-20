@@ -20,7 +20,7 @@ endpoint = os.getenv("DOC_INTELLIGENCE_ENDPOINT")
 key = os.getenv("DOC_INTELLIGENCE_KEY")
 model_id = os.getenv("CUSTOM_BUILT_MODEL_ID")
 # model_id="custom-extrc-model" 
-doc_path = "통합광고플랫폼-사용자매뉴얼.pdf"
+doc_path = "통합광고플랫폼-매뉴얼.pdf"
 
 ##"YOUR_DOCUMENT"
 # formUrl = "https://github.com/mirth6/ktdsTraining/blob/main/인벤토리.pdf"
